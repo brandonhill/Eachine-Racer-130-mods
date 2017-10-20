@@ -25,7 +25,7 @@ translate([0, 0, FRAME_THICKNESS]) {
 
 // 	*
 	%
-	show_half()
+//	show_half()
 	translate(CANOPY_POS)
 	canopy();
 
