@@ -11,8 +11,8 @@ use <canopy.scad>;
 mock_battery();
 
 // *
-// color(COLOUR_CF)
-%
+//%
+color(COLOUR_CF)
 mock_frame();
 translate([0, 0, FRAME_THICKNESS]) {
 
@@ -25,7 +25,7 @@ translate([0, 0, FRAME_THICKNESS]) {
 
 // 	*
 	%
-// 	show_half()
+	show_half()
 	translate(CANOPY_POS)
 	canopy();
 
