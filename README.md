@@ -4,13 +4,13 @@
 
 ![Eachine Racer 130 mods OpenSCAD render](https://github.com/brandonhill/Eachine-Racer-130-mods/blob/master/img/render.png)
 
-![Eachine Racer 130 mods completed build](https://github.com/brandonhill/Eachine-Racer-130-mods/blob/master/img/build.png)
+![Eachine Racer 130 mods completed build](https://github.com/brandonhill/Eachine-Racer-130-mods/blob/master/img/build.jpg)
 
-![Eachine Racer 130 mods canopy off](https://github.com/brandonhill/Eachine-Racer-130-mods/blob/master/img/build-canopy-off.png)
+![Eachine Racer 130 mods canopy off](https://github.com/brandonhill/Eachine-Racer-130-mods/blob/master/img/build-canopy-off.jpg)
 
 I did this because initially the stock flight controller died, and I replaced it with an Omnibus F3 mini, which has different mounting holes. Then I decided I preferred the RunCam Swift Micro, and Eachine VTX03 video transmitter, and cloverleaf antenna, and WS811 LED. You get the picture. All that and a full canopy comes in at ~2g less than stock!
 
-![Eachine Racer 130 custom modifications - AUW 130.4g](https://github.com/brandonhill/Eachine-Racer-130-mods/blob/master/img/auw.png)
+![Eachine Racer 130 custom modifications - AUW 130.4g](https://github.com/brandonhill/Eachine-Racer-130-mods/blob/master/img/auw.jpg)
 
 ## Dependencies
 
