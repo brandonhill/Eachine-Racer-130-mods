@@ -1,6 +1,6 @@
 # Eachine Racer 130 mods
 
-3D printable components to modify your Racer 130. Replaces the standoffs, top plate, front shroud.
+3D printable components to modify your Racer 130. Replaces the standoffs, top plate, front shroud. This repository contains source files. [Ready-to-print STL files](https://www.thingiverse.com/thing:2605581 "Eachine Racer 130 3D printed replacement parts") are available on Thingiverse.
 
 ![Eachine Racer 130 mods OpenSCAD render](https://github.com/brandonhill/Eachine-Racer-130-mods/blob/master/img/render.png)
 
