@@ -8,7 +8,7 @@ module cam_mount(
 		arm_width = CAM_MOUNT_ARM_WIDTH,
 		base_thickness = CAM_MOUNT_BASE_THICKNESS,
 		cam_dim = CAM_DIM,
-		screw_dim = SCREW_M2_DIM,
+		screw_dim = SCREW_M2_SOCKET_DIM,
 		z_offset = CAM_Z_OFFSET,
 	) {
 

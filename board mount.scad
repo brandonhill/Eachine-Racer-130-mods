@@ -6,7 +6,7 @@ use <canopy.scad>;
 module board_mount_post(
 		height = 5,
 		board_hole_spacing = FC_HOLE_SPACING,
-		board_screw_dim = SCREW_M2_DIM,
+		board_screw_dim = SCREW_M2_SOCKET_DIM,
 		frame_mount = true,
 		frame_hole_spacing = FRAME_HOLE_SPACING,
 		frame_screw_dim = FRAME_SCREW_DIM,
@@ -32,9 +32,9 @@ module board_mount_post(
 module board_mount_post_holes(
 		height = 5,
 		board_hole_spacing = FC_HOLE_SPACING,
-		board_screw_dim = SCREW_M2_DIM,
+		board_screw_dim = SCREW_M2_SOCKET_DIM,
 		frame_hole_spacing = FRAME_HOLE_SPACING,
-		frame_screw_dim = SCREW_M2_DIM,
+		frame_screw_dim = SCREW_M2_SOCKET_DIM,
 		frame_screw_depth = FRAME_SCREW_DEPTH,
 	) {
 
@@ -52,7 +52,7 @@ module board_mount_back(
 		depth = 10,
 		frame_hole_spacing = FRAME_HOLE_SPACING,
 		frame_screw_depth = FRAME_SCREW_DEPTH,
-		frame_screw_dim = SCREW_M2_DIM,
+		frame_screw_dim = SCREW_M2_SOCKET_DIM,
 		frame_screw_surround = 1.5,
 		height = 5,
 	) {
@@ -99,7 +99,7 @@ module board_mount_front(
 		cam_pos = CAM_MOUNT_POS,
 		cam_mount_width = CAM_MOUNT_ARM_WIDTH,
 		frame_hole_spacing = FRAME_HOLE_SPACING,
-		frame_screw_dim = SCREW_M2_DIM,
+		frame_screw_dim = SCREW_M2_SOCKET_DIM,
 		frame_screw_surround = 1.5,
 		height = 5,
 	) {
@@ -135,9 +135,9 @@ module board_mount(
 		frame_outset = [0, 1],
 		height = 5,
 		board_hole_spacing = FC_HOLE_SPACING,
-		board_screw_dim = SCREW_M2_DIM,
+		board_screw_dim = SCREW_M2_SOCKET_DIM,
 		frame_hole_spacing = FRAME_HOLE_SPACING,
-		frame_screw_dim = SCREW_M2_DIM,
+		frame_screw_dim = SCREW_M2_SOCKET_DIM,
 		frame_screw_depth = 4,
 		frame_screw_surround = 1.5,
 		inset_xy = [2, 0],
@@ -225,9 +225,9 @@ module all_in_one_mount() {
 		for (x = [-1, 1], y = [-1, 1])
 		scale([x, y]) {
 			translate([FC_HOLE_SPACING[0] / 2, FC_HOLE_SPACING[1] / 2])
-			circle(SCREW_M2_DIM[0] / 2);
+			circle(SCREW_M2_SOCKET_DIM[0] / 2);
 			translate([FRAME_HOLE_SPACING[0] / 2, FRAME_HOLE_SPACING[1] / 2])
-			circle(SCREW_M2_DIM[0] / 2);
+			circle(SCREW_M2_SOCKET_DIM[0] / 2);
 		}
 	}
 }

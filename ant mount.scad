@@ -3,7 +3,7 @@ include <_conf.scad>;
 
 module ant_mount(
 		height = 14,
-		screw_dim = SCREW_M2_DIM,
+		screw_dim = SCREW_M2_SOCKET_DIM,
 		screw_surround = 1.5,
 		screw_depth = 4,
 		thickness = 3,
