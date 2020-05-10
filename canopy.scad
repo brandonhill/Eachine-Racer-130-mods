@@ -1,230 +1,297 @@
 
-include <_conf.scad>;
+include <_setup.scad>;
 use <board mount.scad>;
 use <cam mount.scad>;
 
-module canopy(
-		cam_arm_width = CAM_MOUNT_ARM_WIDTH,
-		cam_hole_rad = CANOPY_CAM_HOLE_RAD,
-		dim = CANOPY_DIM,
-		frame_hole_spacing = FRAME_HOLE_SPACING,
-		frame_width = FRAME_DIM[1],
-		lip_depth = CANOPY_LIP_DEPTH,
-		lip_thickness = CANOPY_LIP_THICKNESS,
-		lip_width = CANOPY_LIP_WIDTH,
-		rounding = CANOPY_ROUNDING,
-		strap_dim = BATT_STRAP_DIM,
-		thickness = CANOPY_THICKNESS,
-		cam_z_offset = CAM_Z_OFFSET,
-	) {
-
+module canopy() {
 	difference() {
-
-		canopy_solid();
-		canopy_solid(offset = -thickness);
-
-		// battery strap holes
-		hull()
-		reflect(y = false)
-		translate([-strap_dim[0] / 2, 0])
-		rotate([90, 0])
-		cylinder(h = frame_width + 0.2, r = strap_dim[1] + TOLERANCE_CLEAR, center = true);
-
-		// camera hole
-		translate([
-			CAM_MOUNT_POS[0],
-			0,
-			CAM_MOUNT_BASE_THICKNESS + CAM_Z_OFFSET + CAM_DIM[1] / 2 + 3])
-		rotate([0, -CAM_ANGLE])
-		translate([-CAM_PIVOT_OFFSET - 3, 0])
-		reflect(x = false, y = false, z = [-1, 1])
-		capsule(20, cam_hole_rad, center = true);
-
-		// clip holes
-		canopy_clips(back = true, front = true, offset = TOLERANCE_FIT, diff = true);
-
-		// vtx ant. hole
-		hull()
-		for (z = [0, VTX_POS[2]])
-		translate([-(frame_hole_spacing[0] / 2 + 4), 0, z])
-		rotate([0, 90])
-		cylinder(h = 20, r = 1.25, center = true);
-
-		// wire hole (back)
-		hull()
-		reflect(x = false)
-		translate([-(frame_hole_spacing[0] / 2 + 3), 2])
-		capsule(18, 4, center = true);
-
-		// wire holes (front)
-		reflect(x = false)
-		translate([frame_hole_spacing[0] / 2 + 9, frame_hole_spacing[1] / 2 + 2])
-		capsule(18, 4, center = true);
-	}
-
-	// retention lip
-	intersection() {
-		canopy_solid();
-
-		translate([TOLERANCE_FIT, 0])
+		// canopy_solid(offset = TOLERANCE_CLEAR + CANOPY_THICKNESS, flares = false);
+		// canopy_solid(offset = 0, flares = false);
+		// *
 		union() {
-			translate([CAM_MOUNT_POS[0] + cam_arm_width / 2, 0, lip_thickness / 2])
-			translate([50, 0])
-			cube([100, frame_width, lip_thickness], true);
-
-			canopy_lip();
+			difference() {
+				canopy_solid(offset = TOLERANCE_CLEAR + CANOPY_THICKNESS);
+				canopy_solid(offset = TOLERANCE_CLEAR);
+			}
+			intersection() {
+				canopy_solid(offset = TOLERANCE_CLEAR);
+				union() {
+					canopy_lip();
+					canopy_lip_back(smooth = 0.25);
+				}
+			}
 		}
+
+		// side boom cutouts
+		pos_booms()
+		translate([0, 10, -0.1])
+		linear_extrude(FRAME_THICKNESS + 0.1, convexity = 2, scale = 0.85)
+		offset(r = FRAME_THICKNESS * 3)
+		sq([FRAME_ARM_WIDTH, 20]);
+
+		// batt conn cutout
+		hull()
+		for (z = [0, FRAME_THICKNESS])
+		translate([0, 0, z])
+		batt_conn_cutout();
+
+		// batt strap cutout
+		*linear_extrude(FRAME_THICKNESS + BATT_STRAP_DIM[1], scale = [0.8, 1])
+		offset(r = FRAME_THICKNESS)
+		sq([
+			BATT_STRAP_DIM[0] + TOLERANCE_CLOSE * 2,
+			FRAME_DIM[1] + (TOLERANCE_CLEAR + CANOPY_THICKNESS) * 2]);
+
+		// cam cutout (windshield)
+		translate([CAM_POS[0], 0, FRAME_THICKNESS + CANOPY_SEAL_DEPTH + WINDSHIELD_CUTOUT_DIM[0] / 2])
+		translate([CAM_DIM[2] / 2, 0])
+		rotate([0, 90])
+		linear_extrude(10, center = true)
+		rounded_square(WINDSHIELD_CUTOUT_DIM, CANOPY_ROUNDING);
+
+		// led cutouts
+		translate([0, 0, FRAME_THICKNESS])
+		pos_led()
+		pos_led_holes()
+		hull()
+		reflect(x = false)
+		translate([0, LED_DIM[0] / 3, LED_DIM[2] * 1.3])
+		cylinder_true(h = CANOPY_THICKNESS + 0.2, r1 = LED_DIM[0] / 2, r2 = LED_DIM[0] / 6, $fn = 8);
+		// cylinder_true(h = CANOPY_THICKNESS + 0.2, r = LED_DIM[0] / 6, $fn = 8);
+
+		// motor wire cutouts
+		pos_motor_wires()
+		translate([0, 0, -FRAME_MOUNT_SKIN - MOTOR_WIRE_CUTOUT_DIM[1] / 2])
+		rounded_cube([
+			MOTOR_WIRE_CUTOUT_DIM[0],
+			FRAME_DIM[1],
+			MOTOR_WIRE_CUTOUT_DIM[1] * 2], MOTOR_WIRE_RAD);
+
+		// rx ant mount cutouts
+		translate([RX_ANT_MOUNT_POS[0] + TOLERANCE_CLEAR + RX_ANT_WIRE_RAD, 0])
+		linear_extrude(RX_ANT_MOUNT_DIM[2] + FRAME_THICKNESS + TOLERANCE_FIT, scale = [0.6, 1])
+		offset(r = RX_ANT_MOUNT_DIM[2] + FRAME_THICKNESS / 2)
+		hull()
+		reflect(x = false)
+		translate([0, FRAME_DIM[1]])
+		circle(RX_ANT_MOUNT_DIM[0] / 2);
+
+		// venting
+		if (CANOPY_VENT_R) {
+
+			// top
+			reflect(x = false)
+			for (x = [-FRAME_DIM[0] * 0.15 : 6 + CANOPY_VENT_R : FRAME_DIM[0] * 0.4], y = [0, FC_DIM[1] * 0.15])
+			translate([x, y, CANOPY_HEIGHT - CANOPY_THICKNESS / 2])
+			linear_extrude(CANOPY_THICKNESS * 2)
+			hull()
+			for (i = [FC_DIM[0] * 0.125 : FC_DIM[0] * 0.25])
+			translate([-i, i * 0.5])
+			circle(r = CANOPY_VENT_R);
+
+			// sides
+			for (x = [-FRAME_DIM[0] * 0.3 : 6 + CANOPY_VENT_R : FRAME_DIM[0] * 0.1])
+			translate([x, 0, 7 + CANOPY_VENT_R])
+			rotate([90, 0])
+			linear_extrude(FRAME_DIM[1] * 1.5, center = true)
+			hull()
+			for (i = [0, 4])
+			translate([i / 2, i])
+			circle(r = CANOPY_VENT_R);
+		}
+
+
+		// cut off bottom
+		translate([0, 0, FRAME_THICKNESS]) // TODO: remove those other weird cutouts
+		translate([0, 0, -SIZE_DIA])
+		cube(SIZE_DIA * 2, true);
 	}
 }
 
-module canopy_clips(
-		canopy_thickness = CANOPY_THICKNESS,
-		clip_thickness = CANOPY_CLIP_THICKNESS,
-		diff = false,
-		fc_dim = FC_DIM,
-		frame_hole_spacing = FRAME_HOLE_SPACING,
-		frame_screw_dim = FRAME_SCREW_DIM,
-		frame_screw_surround = FRAME_SCREW_SURROUND,
-		frame_width = FRAME_DIM[1],
-		offset = 0,
-		width = CANOPY_CLIP_WIDTH,
-	) {
-
-	reflect(x = false)
-	translate([
-		-(frame_hole_spacing[0] / 2 + frame_screw_dim[0] / 2 + frame_screw_surround - clip_thickness / 2),
-		frame_hole_spacing[1] / 2 - width / 2])
+module canopy_lip_back(offset = 0, smooth = 0) {
+	translate([-FRAME_DIM[0] / 2 + CANOPY_THICKNESS, 0, FRAME_THICKNESS])
 	rotate([90, 0, 180])
-	linear_extrude(width + offset * 2, center = true)
-	offset(delta = offset)
-	shape_canopy_clip(diff = diff);
-}
-
-module canopy_lip(
-		cam_mount_pos = CAM_MOUNT_POS,
-		cam_mount_width = CAM_MOUNT_ARM_WIDTH,
-		depth = CANOPY_LIP_DEPTH,
-		offset = 0,
-		width = CANOPY_LIP_WIDTH,
-	) {
-
-	pos_x = cam_mount_pos[0] + cam_mount_width / 2;
-
-	translate([pos_x, 0])
-	rotate([90, 0, 180])
-	linear_extrude(width + offset * 2, center = true)
-// 	offset(r = offset)
+	linear_extrude(FRAME_DIM[1], center = true)
+	smooth_acute(smooth)
+ 	offset(r = offset)
+	scale(0.5)
 	shape_canopy_lip();
 }
 
-module canopy_solid(
-		canopy_thickness = CANOPY_THICKNESS,
-		clip_width = CANOPY_CLIP_WIDTH,
-		dim = CANOPY_DIM,
-		frame_hole_spacing = FRAME_HOLE_SPACING,
-		frame_screw_dim = FRAME_SCREW_DIM,
-		frame_screw_surround = FRAME_SCREW_SURROUND,
-		frame_width = FRAME_DIM[1],
-		offset = 0,
-		rounding = CANOPY_ROUNDING,
-	) {
+module canopy_lip(offset = 0) {
+	translate([FRAME_DIM[0] / 2 - CANOPY_THICKNESS, 0, FRAME_THICKNESS])
+	rotate([90, 0])
+	linear_extrude(FRAME_DIM[1], center = true)
+ 	offset(r = offset)
+	shape_canopy_lip();
+}
 
-	front = CAM_MOUNT_POS[0] + 9;
-	r = rounding + offset;
+module canopy_solid(flares = true, offset = 0) {
+	a = asin((CANOPY_HEIGHT - CANOPY_ROUNDING) / (WINDSHIELD_RAD - CANOPY_ROUNDING));
+	r = CANOPY_ROUNDING + offset;
+	windshield_r = WINDSHIELD_RAD - CANOPY_ROUNDING;
 
-	module corner(base = false) {
-		sphere(r, $fn = base ? 8 : $fn);
+	module points_cam() {
+		#translate([0, 0, FRAME_THICKNESS])
+		translate(CAM_POS)
+		rotate(CAM_ROT)
+		translate([(CAM_DIM[2] - CANOPY_ROUNDING) / 2, 0])
+		rotate([0, 90])
+		reflect()
+		translate([CAM_DIM[0] / 2 * 3/4, CAM_DIM[0] / 2])
+		sphere(r);
 	}
 
-	intersection() {
+	module points_esc() {
+		translate(ESC_POS)
+		reflect()
+		rotate(ESC_ROT)
+		translate([-CANOPY_ROUNDING + COMPONENT_CLEARANCE, -CANOPY_ROUNDING + COMPONENT_CLEARANCE])
+		translate(ESC_DIM / 2)
+		sphere(r);
+	}
 
-		translate([0, 0, 50 + offset])
-		cube([100, 100, 100], true);
+	module points_fc() {
+		translate(FC_POS)
+		reflect()
+		rotate(FC_ROT)
+		translate([-CANOPY_ROUNDING + COMPONENT_CLEARANCE, -CANOPY_ROUNDING + COMPONENT_CLEARANCE])
+		translate(FC_DIM / 2)
+		sphere(r);
+	}
 
-		hull()
-		reflect(x = false)
-		translate([0, frame_width / 2 - rounding]) {
+	module points_top() {
+		translate([0, 0, CANOPY_HEIGHT - CANOPY_ROUNDING]) {
+			// front
+			*reflect(x = false)
+			translate([CAM_POS[0] + CAM_DIM[2] / 2 - CANOPY_ROUNDING - 2, CAM_DIM[0] / 2 - CANOPY_ROUNDING])
+			sphere(r, $fn = 8);
 
-				translate([
-					-(frame_hole_spacing[0] / 2 + frame_screw_dim[0] / 2 + frame_screw_surround - rounding + TOLERANCE_FIT + canopy_thickness),
-					0]) {
+			// mid (vtx)
+			reflect(x = false)
+			translate([-FC_HOLE_SPACING[0] / 2, VTX_DIM[1] / 2])
+			sphere_true(r, $fn = 8);
 
-					// back bottom
-					corner();
-
-					// back mid
-					translate([0, 0, FC_POS[2] + FC_DIM[2] / 2])
-					corner();
-				}
-
-				// back top
-				translate([-FC_DIM[0] / 4, -dim[1] * 0.25, dim[2] - rounding])
-				corner(base = true);
-
-				// fc
-				translate([FC_DIM[0] / 2, 0, FC_POS[2] + FC_DIM[2] / 2])
-				corner();
-
-				// mount
-				translate([frame_hole_spacing[0] / 2, 0])
-				corner();
-
-				// mid top
-				translate([frame_hole_spacing[0] / 2, 0, dim[2] - rounding])
-				corner(base = true);
-
-				translate([CAM_MOUNT_POS[0], 0]) {
-					// cam mount mid
-					translate([0, 0, dim[2] / 2])
-					corner();
-
-					// cam mount top
-					translate([0, -rounding / 2, dim[2] - rounding])
-					corner(base = true);
-				}
-
-				// front bottom
-				translate([CAM_MOUNT_POS[0] + CAM_MOUNT_ARM_WIDTH / 2 - rounding / 2, -rounding / 2])
-				corner();
-
-				// front mid
-				translate([front, -dim[1] / 4, dim[2] / 2])
-				corner();
-
-				// front top
-				translate([front - 4, -dim[1] / 4, dim[2] - rounding])
-				corner(base = true);
+			// back
+			translate([VTX_ANT_POS[0], 0])
+			torus_true(8 - CANOPY_ROUNDING + COMPONENT_CLEARANCE, r, fn = 8);
 		}
 	}
+
+	module points_led() {
+		translate([0, 0, FRAME_THICKNESS])
+		pos_led()
+		reflect()
+		translate([LED_BOARD_DIM[0] / 2, LED_BOARD_DIM[1] / 2, LED_BOARD_DIM[2] / 2 + LED_DIM[2] - CANOPY_ROUNDING + TOLERANCE_CLEAR])
+		sphere(r);
+	}
+
+	module points_vtx() {
+		for (z = [0, FRAME_THICKNESS + VTX_POS[2] + VTX_DIM[2] / 2])
+		translate([VTX_POS[0], VTX_POS[1], z])
+		reflect(x = false)
+		rotate(VTX_ROT) {
+			translate([(VTX_DIM[0] + CANOPY_ROUNDING) / 2, (VTX_DIM[1] + CANOPY_ROUNDING) / 2 - VTX_ANT_MOUNT_DIM[1]])
+			sphere(r);
+			translate([VTX_ANT_MOUNT_DIM[0] + CANOPY_ROUNDING, VTX_DIM[1] + CANOPY_ROUNDING] / 2)
+			sphere(r);
+		}
+	}
+
+	difference() {
+		hull()
+		// union()
+		{
+
+			points_top();
+
+			// cam pivot
+			translate(CAM_POS)
+			reflect(x = false)
+			rotate(CAM_ROT)
+			translate([-CANOPY_ROUNDING + COMPONENT_CLEARANCE, -CANOPY_ROUNDING + COMPONENT_CLEARANCE])
+			translate([CAM_MOUNT_ARM_WIDTH / 2, CAM_DIM[0] / 2 + CAM_MOUNT_ARM_THICKNESS + CAM_MOUNT_SCREW_DIM[2] + TOLERANCE_CLEAR, FRAME_THICKNESS])
+			sphere(r);
+
+			// windshield
+			reflect(x = false) {
+				translate([0, CAM_DIM[0] / 2 - CANOPY_ROUNDING])
+				translate([-(windshield_r) + FRAME_DIM[0] / 2 - CANOPY_ROUNDING - CANOPY_THICKNESS, 0])
+				// translate([windshield_r, 0])
+				// rotate([0, 0, 20])
+				// translate([-windshield_r, 0])
+				{
+					rotate([90, 0])
+					rotate_extrude(angle = a, $fa = 5)
+					translate([windshield_r, 0])
+					circle(r);
+
+					rotate([0, -a])
+					translate([windshield_r, 0])
+					rotate([0, a])
+					sphere_true(r, $fn = 8);
+				}
+			}
+
+			points_esc();
+
+			points_fc();
+
+			// led
+			points_led();
+			linear_extrude(1)
+			projection()
+			points_led();
+
+			// frame centre
+			linear_extrude(FRAME_THICKNESS)
+			offset(r = offset)
+			rounded_square([
+				FRAME_DIM[0] * 0.75,
+				FRAME_DIM[1]], CANOPY_ROUNDING);
+		}
+
+		// windshield recess
+		translate([-(windshield_r) + FRAME_DIM[0] / 2 - CANOPY_ROUNDING - CANOPY_THICKNESS, 0])
+		rotate([90, 0])
+		rotate_extrude(angle = 90, $fa = 5)
+		translate([WINDSHIELD_RAD + 5 - TOLERANCE_CLEAR - WINDSHIELD_THICKNESS + offset, 0])
+		sq([10, WINDSHIELD_CUTOUT_DIM[1] + (TOLERANCE_CLEAR + CANOPY_THICKNESS) * 2 + 3 - offset * 2]);
+	}
+
+	if (flares) {
+
+		// batt strap cutout flares
+		*hull()
+		reflect(z = true)
+		translate([
+			BATT_STRAP_DIM[0] / 2 - CANOPY_ROUNDING / 2,
+			FRAME_DIM[1] / 2 + BATT_STRAP_DIM[1] - CANOPY_ROUNDING / 2,
+			BATT_STRAP_SURROUND_DIM[2] + CANOPY_THICKNESS - CANOPY_ROUNDING / 2])
+		sphere(r);
+
+		// motor wire cutout flares
+		translate([0, 0, -FRAME_THICKNESS])
+		for (x = [-1, 1])
+		scale([x, 1])
+		pos_motor_wires(reflect = [false, true])
+		translate([0, x > 0 ? -1 : 0]) // front and back are inset differently
+		hull()
+		for (x = [-1, 1], y = [0, 1], z = [0, 1])
+		translate([
+			(MOTOR_WIRE_CUTOUT_DIM[0] / 2 - CANOPY_ROUNDING / 2) * x,
+			-CANOPY_ROUNDING - CAM_POS[2] * 0.6 * z - 10 * y - 1,
+			CAM_POS[2] * z])
+		sphere(r);
+	}
 }
 
-// clip for rear of canopy
-module shape_canopy_clip(
-		canopy_thickness = CANOPY_THICKNESS,
-		clip_thickness = CANOPY_CLIP_THICKNESS,
-		diff = false,
-		height = CANOPY_CLIP_HEIGHT,
-	) {
-
-	if (!diff)
-	translate([0, (height - clip_thickness / 2) / 2])
-	square([clip_thickness, height - clip_thickness / 2], true);
-
-	translate([-clip_thickness / 2, height - clip_thickness])
-	rotate([0, 0, 20])
-	segment(70, canopy_thickness * 1.25 + clip_thickness);
-}
-
-// retention lip for front of canopy
-module shape_canopy_lip(
-		depth = CANOPY_LIP_DEPTH,
-		thickness = CANOPY_LIP_THICKNESS,
-	) {
-	
+module shape_canopy_lip() {
+	mirror([1, 0])
 	polygon([
-		[0, 0],
-		[0, thickness - PRINT_LAYER],
-		[depth, thickness / 2],
-		[depth, 0],
+		[-10, 0],
+		[-10, CANOPY_LIP_DIM[1]],
+		[0, CANOPY_LIP_DIM[1]],
+		[CANOPY_LIP_DIM[0], 0],
 	]);
 }
